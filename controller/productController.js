@@ -13,14 +13,14 @@ const getProducts = asyncHandler(async (req, res) => {
 
   const keyword = req.query.keyword
     ? {
-        name: {
-          $regex: req.query.keyword,
-          $options: "i",
-        },
-      }
+      name: {
+        $regex: req.query.keyword,
+        $options: "i",
+      },
+    }
     : {};
-  const count = await Product.countDocuments({ ...keyword });
-  const products = await Product.find({ ...keyword })
+  const count = await Product.countDocuments({...keyword});
+  const products = await Product.find({...keyword})
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
@@ -36,8 +36,8 @@ const getProducts = asyncHandler(async (req, res) => {
 const getProductById = asyncHandler(async (req, res) => {
   const product = await Product.findByIdAndUpdate(
     req.params.id,
-    { $inc: { numViews: 1 } },
-    { new: true }
+    {$inc: {numViews: 1}},
+    {new: true}
   );
   if (product) {
     res.json(product);
@@ -67,7 +67,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 //POST create product
 //POST /api/products/
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, image, category, countInStock, description } = req.body;
+  const {name, price, image, category, countInStock, description} = req.body;
   const product = new Product({
     name,
     price,
@@ -107,7 +107,7 @@ const importProduct = asyncHandler(async (req, res) => {
 //PUT update product
 //PUT /api/products/:id
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, countInStock, sold, category } =
+  const {name, price, description, image, countInStock, sold, category} =
     req.body;
   const product = await Product.findById(req.params.id);
   if (product) {
@@ -127,7 +127,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 });
 
 const createProductReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
+  const {rating, comment} = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -179,6 +179,11 @@ const getTopProductsInOrders = asyncHandler(async (req, res) => {
   try {
     const result = await Order.aggregate([
       {
+        $match: {
+          isPaid: true,
+        },
+      },
+      {
         $unwind: "$orderItems",
       },
       {
@@ -196,7 +201,7 @@ const getTopProductsInOrders = asyncHandler(async (req, res) => {
         $project: {
           _id: 1,
           products: {
-            $slice: ["$products", 5], // Giới hạn tối đa 5 sản phẩm
+            $slice: ["$products", 5],
           },
         },
       },
@@ -216,9 +221,9 @@ const getTopProductsInOrders = asyncHandler(async (req, res) => {
       };
     });
 
-    return res.status(200).json({ success: true, data: productsInOrders });
+    return res.status(200).json({success: true, data: productsInOrders});
   } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({success: false, error: error.message});
   }
 });
 
@@ -229,7 +234,7 @@ const totalProducts = asyncHandler(async (req, res) => {
 
   const products = await Product.find({
     $expr: {
-      $and: [{ $eq: [{ $month: "$createdAt" }, thisMonth] }],
+      $and: [{$eq: [{$month: "$createdAt"}, thisMonth]}],
     },
   });
   res.send("OK");
