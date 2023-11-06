@@ -4,6 +4,7 @@ import generate from "../utils/generateToken.js";
 import nodemailer from "nodemailer";
 import { sendMail, sendEmailAccept } from "../utils/sendMail.js";
 import crypto from "crypto";
+import Order from "../models/orderModel.js";
 // validation user && GET token
 //POST /api/users/login
 const authUser = asyncHandler(async (req, res) => {
@@ -267,7 +268,9 @@ const calculateTotalPaymentRanking = asyncHandler(async (req, res) => {
       },
     ]);
 
-    return res.status(200).json({ success: true, data: result });
+    const populatedResult = await User.populate(result, { path: "_id" });
+
+    return res.status(200).json({ success: true, data: populatedResult });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
