@@ -2,6 +2,9 @@ import asyncHandler from "express-async-handler";
 import Product from "../models/productModel.js";
 import xlsx from "xlsx";
 import path from "path";
+import Order from "../models/orderModel.js";
+
+
 //GET all products
 // GET /api/products
 const getProducts = asyncHandler(async (req, res) => {
@@ -171,6 +174,54 @@ const getTopProducts = asyncHandler(async (req, res) => {
 
   res.json(products);
 });
+
+const getTopProductsInOrders = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $unwind: "$orderItems",
+      },
+      {
+        $group: {
+          _id: "$_id",
+          products: {
+            $push: {
+              product: "$orderItems.product",
+              quantity: "$orderItems.qty",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          products: {
+            $slice: ["$products", 5], // Giới hạn tối đa 5 sản phẩm
+          },
+        },
+      },
+    ]);
+
+    const productsInOrders = result.map((order) => {
+      const products = order.products.map((product) => {
+        return {
+          product: product.product,
+          quantity: product.quantity,
+        };
+      });
+
+      return {
+        orderId: order._id,
+        products: products,
+      };
+    });
+
+    return res.status(200).json({ success: true, data: productsInOrders });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 //thong ke user trong thang
 const totalProducts = asyncHandler(async (req, res) => {
   const date = new Date();
@@ -198,4 +249,5 @@ export {
   importProduct,
   totalProducts,
   totalTypes,
+  getTopProductsInOrders,
 };
