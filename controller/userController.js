@@ -2,11 +2,11 @@ import asyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
 import generate from "../utils/generateToken.js";
 import nodemailer from "nodemailer";
-import sendMail from "../utils/sendMail.js";
+import { sendMail, sendEmailAccept } from "../utils/sendMail.js";
+import crypto from "crypto";
 // validation user && GET token
 //POST /api/users/login
 const authUser = asyncHandler(async (req, res) => {
-  console.log(req.cookies.token);
   const { email, password } = req.body;
   const user = await User.findOne({
     email,
@@ -142,8 +142,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     email,
   });
   if (user) {
-    const link = `${process.env.BASE_URL}/password-reset/${user._id}`;
-    await sendMail(user.email, "Password reset", link);
+    const link = `${process.env.BASE_URL}/api/users/resetpassword/${user._id}`;
+    await sendEmailAccept(user.email, "Password reset", link);
     return res
       .status(300)
       .json("password reset link sent to your email account");
@@ -153,10 +153,13 @@ const resetPassword = asyncHandler(async (req, res) => {
 // new password after reset password
 const newPassword = asyncHandler(async (req, res) => {
   const { userid } = req.params;
-  const { newPassword } = req.body;
+  // const { newPassword } = req.body;
+  const randomPassword = crypto.randomBytes(4).toString("hex");
   const user = await User.findOne({ _id: userid });
-  user.password = newPassword;
+  user.password = randomPassword;
   user.save();
+  await sendMail(user.email, "Password reset", randomPassword);
+  res.redirect("http://localhost:3000");
   res.status(300).json("Password update successful");
 });
 

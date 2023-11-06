@@ -18,8 +18,8 @@ const router = express.Router();
 
 router.route("/").post(registerUser).get(protect, admin, getUsers);
 router.route("/chart").get(protect, admin, totalUsers);
+router.route("/resetpassword/:userid").get(newPassword);
 router.route("/resetpassword").post(resetPassword);
-router.route("/resetpassword/:userid").post(newPassword);
 router
   .route("/profile")
   .get(protect, getUserProfile)
