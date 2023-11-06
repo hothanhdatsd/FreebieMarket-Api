@@ -1,5 +1,6 @@
 import asyncHandler from "express-async-handler";
 import Order from "../models/orderModel.js";
+import Product from "../models/productModel.js";
 
 //POST one order
 // POST /api/orders
@@ -114,6 +115,80 @@ const totalOrders = asyncHandler(async (req, res) => {
   console.log(orders);
   res.send("OK");
 });
+
+const calculateTotalRevenueByDay = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true, // Chỉ lấy ra các đơn hàng đã thanh toán
+        },
+      },
+      {
+        $unwind: "$orderItems",
+      },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            productId: "$orderItems.product",
+          },
+          totalRevenue: { $sum: { $multiply: ["$orderItems.qty", "$orderItems.price"] } },
+        },
+      },
+    ]);
+
+    const revenueByDay = {};
+
+    result.forEach((item) => {
+      const day = item._id.day;
+      const productId = item._id.productId;
+      const totalRevenue = item.totalRevenue;
+
+      if (!revenueByDay[day]) {
+        revenueByDay[day] = [];
+      }
+
+      revenueByDay[day].push({ productId, totalRevenue });
+    });
+
+    return res.status(200).json({ success: true, data: revenueByDay });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+const calculateTotalRevenueByMonth = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true, // Chỉ lấy ra các đơn hàng đã thanh toán
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          totalRevenue: { $sum: { $multiply: ["$totalPrice", 1] } },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": 1,
+          "_id.month": 1,
+        },
+      },
+    ]);
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export {
   updateOrderToPaid,
   updateOrderToDelivered,
@@ -122,4 +197,6 @@ export {
   getMyOrders,
   getOrders,
   totalOrders,
+  calculateTotalRevenueByDay,
+  calculateTotalRevenueByMonth
 };

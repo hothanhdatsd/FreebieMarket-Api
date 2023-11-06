@@ -246,6 +246,33 @@ const totalUsers = asyncHandler(async (req, res) => {
   res.send("OK");
 });
 
+const calculateTotalPaymentRanking = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true, // Chỉ lấy ra các đơn hàng đã thanh toán
+        },
+      },
+      {
+        $group: {
+          _id: "$user",
+          totalPayment: { $sum: "$totalPrice" },
+        },
+      },
+      {
+        $sort: {
+          totalPayment: -1, // Sắp xếp giảm dần theo tổng số tiền thanh toán
+        },
+      },
+    ]);
+
+    return res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export {
   authUser,
   registerUser,
@@ -258,4 +285,5 @@ export {
   updateUser,
   resetPassword,
   newPassword,
+  calculateTotalPaymentRanking
 };
