@@ -1,23 +1,25 @@
 import express from "express";
 import {
   authUser,
-  registerUser,
-  getUserProfile,
-  updateUserProfile,
-  getUsers,
+  calculateTotalPaymentRanking,
   deleteUser,
   getUserById,
-  updateUser,
-  totalUsers,
-  resetPassword,
+  getUserProfile,
+  getUsers,
   newPassword,
+  registerUser,
+  resetPassword,
+  totalUsers,
+  updateUser,
+  updateUserProfile,
 } from "../controller/userController.js";
-import { protect, admin } from "../middleware/authMiddleware.js";
+import {admin, protect} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.route("/").post(registerUser).get(protect, admin, getUsers);
 router.route("/chart").get(protect, admin, totalUsers);
+router.get("/chart/rank", calculateTotalPaymentRanking)
 router.route("/resetpassword/:userid").get(newPassword);
 router.route("/resetpassword").post(resetPassword);
 router
