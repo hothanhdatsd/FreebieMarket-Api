@@ -14,6 +14,7 @@ import {
   updateUserProfile,
 } from "../controller/userController.js";
 import {admin, protect} from "../middleware/authMiddleware.js";
+import Order from "../models/orderModel.js";
 
 const router = express.Router();
 

@@ -12,12 +12,11 @@ import {
   updateProduct,
 } from "../controller/productController.js";
 import {admin, protect} from "../middleware/authMiddleware.js";
-
 const router = express.Router();
 
 router.route("/").get(getProducts).post(protect, admin, createProduct);
 router.route("/import").post(protect, admin, importProduct);
-router.route("/chart").get(protect, admin, totalProducts);
+router.route("/chart").get(totalProducts);
 // router.get("/top", getTopProducts);
 router.get("/chart/top_product", getTopProductsInOrders)
 router.route("/:id/reviews").post(protect, createProductReview);

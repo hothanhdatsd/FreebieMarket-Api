@@ -237,7 +237,8 @@ const totalProducts = asyncHandler(async (req, res) => {
       $and: [{$eq: [{$month: "$createdAt"}, thisMonth]}],
     },
   });
-  res.send("OK");
+  res.json(products)
+  // res.send("OK");
 });
 //thong ke so loai trong thang
 const totalTypes = asyncHandler(async (req, res) => {

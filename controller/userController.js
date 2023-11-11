@@ -4,6 +4,8 @@ import generate from "../utils/generateToken.js";
 import nodemailer from "nodemailer";
 import { sendMail, sendEmailAccept } from "../utils/sendMail.js";
 import crypto from "crypto";
+import Order from "../models/orderModel.js";
+
 // validation user && GET token
 //POST /api/users/login
 const authUser = asyncHandler(async (req, res) => {
@@ -243,7 +245,7 @@ const totalUsers = asyncHandler(async (req, res) => {
     },
   });
 
-  res.send("OK");
+  res.json(users);
 });
 
 const calculateTotalPaymentRanking = asyncHandler(async (req, res) => {
@@ -285,5 +287,5 @@ export {
   updateUser,
   resetPassword,
   newPassword,
-  calculateTotalPaymentRanking
+  calculateTotalPaymentRanking,
 };
