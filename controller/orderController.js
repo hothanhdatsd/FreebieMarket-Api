@@ -158,6 +158,56 @@ const calculateTotalRevenueByDay = asyncHandler(async (req, res) => {
   }
 });
 
+const getTotalOrdersCompletedByDay  = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true, // Đơn hàng được giao hàng
+        },
+      },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          },
+          totalCompletedOrders: { $sum: 1 }, // Tổng số đơn hàng hoàn thành trong ngày
+        },
+      },
+      {
+        $sort: {
+          "_id.day": 1,
+        },
+      },
+    ]);
+
+    let percentageRecentDays = 0;
+    let totalOrders = 0
+
+    const resultWithPercentage = result.map((dayData, index) => {
+      const previousDayData = result[index - 1] || { totalCompletedOrders: 0 };
+
+      const percentage =
+        previousDayData.totalCompletedOrders !== 0
+          ? ((dayData.totalCompletedOrders - previousDayData.totalCompletedOrders) / previousDayData.totalCompletedOrders) * 100
+          : 100;
+
+      totalOrders += dayData.totalCompletedOrders
+      percentageRecentDays = index === result.length - 1 ? percentage : 0;
+
+      return {
+        day: dayData._id.day,
+        totalCompletedOrders: dayData.totalCompletedOrders,
+        percentage,
+      };
+    });
+
+    return res.status(200).json({ success: true, data: { percentageRecentDays, resultWithPercentage } , totalOrders });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 const calculateTotalRevenueByMonth = asyncHandler(async (req, res) => {
   try {
     const result = await Order.aggregate([
@@ -198,5 +248,6 @@ export {
   getOrders,
   totalOrders,
   calculateTotalRevenueByDay,
-  calculateTotalRevenueByMonth
+  calculateTotalRevenueByMonth,
+  getTotalOrdersCompletedByDay
 };

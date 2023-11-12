@@ -9,6 +9,7 @@ import {
   totalOrders,
   updateOrderToDelivered,
   updateOrderToPaid,
+  getTotalOrdersCompletedByDay,
 } from "../controller/orderController.js";
 import {admin, protect} from "../middleware/authMiddleware.js";
 
@@ -22,5 +23,6 @@ router.route("/:id/pay").put(protect, updateOrderToPaid);
 router.route("/:id/deliver").put(protect, admin, updateOrderToDelivered);
 router.get("/chart/revenue", calculateTotalRevenueByDay)
 router.get("/chart/profit", calculateTotalRevenueByMonth)
+router.get("/chart/total_orders_completed", getTotalOrdersCompletedByDay)
 
 export default router;
