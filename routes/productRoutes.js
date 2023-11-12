@@ -5,7 +5,7 @@ import {
   deleteProduct,
   getProductById,
   getProducts,
-  getTopProductsInOrders,
+  getTopSellingProducts,
   getTopProducts,
   importProduct,
   totalProducts,
@@ -18,7 +18,7 @@ router.route("/").get(getProducts).post(protect, admin, createProduct);
 router.route("/import").post(protect, admin, importProduct);
 router.route("/chart").get(totalProducts);
 // router.get("/top", getTopProducts);
-router.get("/chart/top_product", getTopProductsInOrders)
+router.get("/chart/top_product", getTopSellingProducts)
 router.route("/:id/reviews").post(protect, createProductReview);
 router
   .route("/:id")

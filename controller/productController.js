@@ -175,55 +175,33 @@ const getTopProducts = asyncHandler(async (req, res) => {
   res.json(products);
 });
 
-const getTopProductsInOrders = asyncHandler(async (req, res) => {
+const getTopSellingProducts = asyncHandler(async (req, res) => {
   try {
     const result = await Order.aggregate([
-      {
-        $match: {
-          isPaid: true,
-        },
-      },
       {
         $unwind: "$orderItems",
       },
       {
         $group: {
-          _id: "$_id",
-          products: {
-            $push: {
-              product: "$orderItems.product",
-              quantity: "$orderItems.qty",
-            },
-          },
+          _id: "$orderItems.product",
+          totalQuantity: { $sum: "$orderItems.qty" },
         },
       },
       {
-        $project: {
-          _id: 1,
-          products: {
-            $slice: ["$products", 5],
-          },
+        $sort: {
+          totalQuantity: -1, // Sắp xếp giảm dần theo tổng số lượng bán
         },
+      },
+      {
+        $limit: 5, // Giới hạn tối đa 5 sản phẩm
       },
     ]);
 
-    const productsInOrders = result.map((order) => {
-      const products = order.products.map((product) => {
-        return {
-          product: product.product,
-          quantity: product.quantity,
-        };
-      });
+    const topSellingProducts = await Product.populate(result, { path: "_id", select: "name" });
 
-      return {
-        orderId: order._id,
-        products: products,
-      };
-    });
-
-    return res.status(200).json({success: true, data: productsInOrders});
+    return res.status(200).json({ success: true, data: topSellingProducts });
   } catch (error) {
-    return res.status(500).json({success: false, error: error.message});
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -255,5 +233,5 @@ export {
   importProduct,
   totalProducts,
   totalTypes,
-  getTopProductsInOrders,
+  getTopSellingProducts,
 };
