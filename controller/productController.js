@@ -175,7 +175,7 @@ const getTopProducts = asyncHandler(async (req, res) => {
   res.json(products);
 });
 
-const getTopProductsInOrders = asyncHandler(async (req, res) => {
+const getTopSellingProducts = asyncHandler(async (req, res) => {
   try {
     const result = await Order.aggregate([
       {
@@ -188,40 +188,82 @@ const getTopProductsInOrders = asyncHandler(async (req, res) => {
       },
       {
         $group: {
-          _id: "$_id",
-          products: {
-            $push: {
-              product: "$orderItems.product",
-              quantity: "$orderItems.qty",
-            },
-          },
+          _id: "$orderItems.product",
+          totalQuantity: {$sum: "$orderItems.qty"},
         },
       },
       {
-        $project: {
-          _id: 1,
-          products: {
-            $slice: ["$products", 5],
+        $sort: {
+          totalQuantity: -1, // Sắp xếp giảm dần theo tổng số lượng bán
+        },
+      },
+      {
+        $limit: 5, // Giới hạn tối đa 5 sản phẩm
+      },
+    ]);
+
+    const topSellingProducts = await Product.populate(result, {path: "_id", select: "name"});
+
+    return res.status(200).json({success: true, data: topSellingProducts});
+  } catch (error) {
+    return res.status(500).json({success: false, error: error.message});
+  }
+});
+
+const getTotalProductsAndSalesByDay = asyncHandler(async (req, res) => {
+  try {
+    const result = await Order.aggregate([
+      {
+        $match: {
+          isPaid: true, // Chỉ lấy ra các đơn hàng đã được giao hàng
+        },
+      },
+      {
+        $group: {
+          _id: {
+            day: {$dateToString: {format: "%Y-%m-%d", date: "$createdAt"}},
           },
+          totalProducts: {$sum: {$size: "$orderItems"}}, // Tổng số sản phẩm trong đơn hàng
+          totalSales: {$sum: "$totalPrice"}, // Tổng doanh số
+        },
+      },
+      {
+        $sort: {
+          "_id.day": 1,
         },
       },
     ]);
 
-    const productsInOrders = result.map((order) => {
-      const products = order.products.map((product) => {
-        return {
-          product: product.product,
-          quantity: product.quantity,
-        };
-      });
+    let percentageRecentDays = 0
+    let totalProductsInWeek = 0
+
+    const resultWithPercentage = result.map((dayData, index) => {
+      const previousDayData = result[index - 1] || {totalProducts: 0, totalSales: 0};
+      const percentage =
+        previousDayData.totalProducts !== 0
+          ? ((dayData.totalProducts - previousDayData.totalProducts) / previousDayData.totalProducts) * 100
+          : 100;
+
+      totalProductsInWeek += dayData.totalProducts
+
+      if (index === result.length - 1) {
+        percentageRecentDays = percentage
+      }
 
       return {
-        orderId: order._id,
-        products: products,
+        day: dayData._id.day,
+        totalProducts: dayData.totalProducts,
+        totalSales: dayData.totalSales,
+        percentage,
       };
     });
 
-    return res.status(200).json({success: true, data: productsInOrders});
+    return res.status(200).json({
+      success: true,
+      data: resultWithPercentage,
+      totalProductsInWeek,
+      percentageRecentDays,
+    });
   } catch (error) {
     return res.status(500).json({success: false, error: error.message});
   }
@@ -255,5 +297,6 @@ export {
   importProduct,
   totalProducts,
   totalTypes,
-  getTopProductsInOrders,
+  getTopSellingProducts,
+  getTotalProductsAndSalesByDay
 };
